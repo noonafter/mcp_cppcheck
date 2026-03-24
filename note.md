@@ -1,0 +1,221 @@
+  # 项目结构
+```
+  mcp_cppcheck/
+  ├── src/mcp_cppcheck/
+  │   ├── __init__.py# 包初始化
+  │   ├── __main__.py          # 程序入口
+  │   ├── server.py            # MCP 服务器和工具定义
+  │   ├── project_detector.py  # 项目配置检测
+  │   └── cppcheck_runner.py   # cppcheck 执行和输出清洗
+  ├── pyproject.toml           # 项目配置
+  ├── README.md                # 使用说明
+  └── test_local.py            # 本地测试脚本
+```
+  核心模块详解
+
+  1. project_detector.py - 项目配置检测
+
+  ProjectContext 类：
+  - __init__(target_path) - 初始化，接收目标路径
+  - _is_project_file() - 判断是否是项目文件（.sln, .vcxproj, .cbp）
+  - _find_project_root() - 向上查找项目根目录（通过 .git 或 compile_commands.json）
+  - _find_file(filename) - 在项目根目录查找配置文件
+  - to_dict() - 转换为字典格式
+
+  作用：自动检测项目环境，找到相关配置文件。
+
+  2. cppcheck_runner.py - cppcheck 执行器
+
+  CppcheckRunner 类：
+  - __init__(context) - 接收 ProjectContext 对象
+  - run(mode, config_file) - 执行 cppcheck 并返回清洗后的结果
+  - _build_command(mode, config_file) - 构建 cppcheck 命令行
+  - _clean_xml(xml_output) - 清洗 XML 输出（移除 verbose 和 column 属性）
+
+  命令构建逻辑：
+  # 基础命令
+  ["cppcheck", "--xml", "--xml-version=2"]
+
+  # 根据 mode 添加检查级别
+  mode == "full" → --enable=all
+  mode == "quick" → --enable=warning
+
+  # 根据项目类型选择输入方式
+  if config_file:           → --project <config_file>
+  elif is_project_file:     → --project <target_path>
+  elif compile_commands:    → --project <compile_commands.json>
+  else:                     → <target_path>
+
+  3. server.py - MCP 服务器
+
+  三个工具函数：
+
+  1. check_code(target_path, mode="quick")
+    - 检查代码文件或目录
+    - 返回清洗后的 XML 结果
+  2. check_with_config(target_path, config_file)
+    - 使用指定配置文件检查
+    - 返回清洗后的 XML 结果
+  3. get_project_context(target_path)
+    - 获取项目环境信息
+    - 返回 JSON 格式的配置信息
+
+  FastMCP 的作用：
+  - FastMCP("cppcheck") 创建 MCP 服务器实例
+  - @mcp.tool() 装饰器将函数注册为 MCP 工具
+  - mcp.run() 启动 stdio 服务器，等待客户端连接
+
+  4. main.py - 程序入口
+
+  def main():
+      mcp.run()  # 启动 MCP 服务器
+
+  执行流程
+
+  场景 1：本地脚本使用（不运行 server）
+
+  # 示例：本地直接调用
+  from mcp_cppcheck.project_detector import ProjectContext
+  from mcp_cppcheck.cppcheck_runner import CppcheckRunner
+
+  # 1. 创建项目上下文
+  context = ProjectContext("/path/to/code.cpp")
+  # 输出：检测到项目根目录、compile_commands.json 等
+
+  # 2. 创建运行器
+  runner = CppcheckRunner(context)
+
+  # 3. 执行检查
+  xml_result = runner.run(mode="quick")
+  # 输出：清洗后的 XML 格式检查结果
+
+  # 4. 查看项目信息
+  print(context.to_dict())
+  # 输出：
+  # {
+  #   "is_project_file": false,
+  #   "project_root": "/path/to/project",
+  #   "compile_commands": "/path/to/project/compile_commands.json",
+  #   "cppcheck_config": null,
+  #   "mcp_config": null
+  # }
+
+  执行过程：
+  1. ProjectContext 向上查找项目根目录
+  2. 检测 compile_commands.json 等配置文件
+  3. CppcheckRunner 构建命令：cppcheck --xml --xml-version=2 --enable=warning --project /path/to/project/compile_commands.json
+  4. 执行 subprocess.run() 调用 cppcheck
+  5. 解析 XML 输出，移除 verbose 和 column 属性
+  6. 返回清洗后的 XML 字符串
+
+  场景 2：运行 MCP Server
+
+  启动服务器：
+  uv run mcp_cppcheck
+
+  执行流程：
+  1. __main__.py 的 main() 被调用
+  2. mcp.run() 启动 stdio 服务器
+  3. 服务器监听 stdin，等待 MCP 客户端连接
+  4. 客户端通过 JSON-RPC 协议发送请求
+
+  MCP 协议交互示例：
+
+  // 客户端请求：列出工具
+  {
+    "jsonrpc": "2.0",
+    "method": "tools/list",
+    "id": 1
+  }
+
+  // 服务器响应
+  {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "check_code",
+          "description": "Check code with cppcheck",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "target_path": {"type": "string"},
+              "mode": {"type": "string"}
+            }
+          }
+        }
+      ]
+    },
+    "id": 1
+  }
+
+  // 客户端调用工具
+  {
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "check_code",
+      "arguments": {
+        "target_path": "/path/to/code.cpp",
+        "mode": "quick"
+      }
+    },
+    "id": 2
+  }
+
+  // 服务器响应（执行结果）
+  {
+    "jsonrpc": "2.0",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "<?xml version=\"1.0\"?><results>...</results>"
+        }
+      ]
+    },
+    "id": 2
+  }
+
+  FastMCP 的工作原理：
+  1. @mcp.tool() 装饰器自动生成工具的 JSON Schema
+  2. mcp.run() 启动异步 stdio 服务器
+  3. 接收 JSON-RPC 请求，解析参数
+  4. 调用对应的 Python 函数
+  5. 将返回值封装为 MCP 响应格式
+  6. 通过 stdout 返回给客户端
+
+  典型使用场景
+
+  场景 A：LLM 调用（通过 MCP 客户端）
+  用户 → Claude Desktop → MCP Client → stdio → mcp_cppcheck server↓
+                                      check_code("main.cpp")
+                                                ↓
+                                      ProjectContext → CppcheckRunner
+                                                ↓
+                                      subprocess.run(cppcheck ...)
+                                                ↓
+                                      清洗 XML → 返回结果
+
+  场景 B：本地脚本
+  # test_local.py
+  context = ProjectContext(".")
+  runner = CppcheckRunner(context)
+  result = runner.run("quick")
+  print(result)
+
+  输入输出总结
+
+  输入：
+  - 文件路径或目录路径
+  - 检查模式（quick/full）
+  - 可选的配置文件路径
+
+  输出：
+  - 清洗后的 XML 格式检查结果
+  - 或 JSON 格式的项目信息
+
+  关键优化：
+  - 自动检测项目配置，无需手动指定
+  - 清洗 XML 输出，减少冗余信息
+  - 统一接口，适合 LLM 调用

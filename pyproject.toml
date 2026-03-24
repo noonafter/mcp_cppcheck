@@ -1,0 +1,21 @@
+[project]
+name = "mcp-cppcheck"
+version = "0.1.0"
+description = "MCP plugin for cppcheck static analysis tool"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+mcp_cppcheck = "mcp_cppcheck.__main__:main"
+
+[project.optional-dependencies]
+windows = ["pywin32>=306"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
