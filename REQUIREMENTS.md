@@ -193,3 +193,6 @@ def _extract_compile_flags(compile_commands_path):
 比如关闭/去掉关于qt宏的报错
 用户指定关闭一些特定类型的报错
 
+### 4. 支持输出报告到本地
+--output-file=文件名带上当前cppcheck的参数
+

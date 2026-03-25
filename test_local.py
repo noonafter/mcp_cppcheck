@@ -4,7 +4,7 @@ from mcp_cppcheck.cppcheck_runner import CppcheckRunner
 
 # Test project detection
 print("Testing project detection...")
-context = ProjectContext("D:\\alc\\c\\g33ddc\\src\\app")
+context = ProjectContext("/g/alc/c/g33ddc/src/app")
 print(f"Project root: {context.project_root}")
 print(f"Is project file: {context.is_project_file}")
 print(f"Compile commands: {context.compile_commands}")

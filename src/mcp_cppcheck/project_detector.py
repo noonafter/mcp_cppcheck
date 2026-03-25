@@ -1,12 +1,34 @@
 """Project configuration detection module"""
+import re
+import platform
 from pathlib import Path
 from typing import Optional
+
+
+def normalize_path(path_str: str) -> Path:
+    """Normalize path from various formats
+
+    Handles Git Bash style on Windows: /d/path -> D:/path
+    """
+    if platform.system() == "Windows":
+        # Git Bash style: /d/path -> D:/path
+        match = re.match(r'^/([a-z])/(.+)$', path_str, re.IGNORECASE)
+        if match:
+            drive = match.group(1).upper()
+            rest = match.group(2)
+            path_str = f"{drive}:/{rest}"
+
+    return Path(path_str).resolve()
 
 
 class ProjectContext:
     """Project context information"""
     def __init__(self, target_path: str):
-        self.target_path = Path(target_path).resolve()
+        self.target_path = normalize_path(target_path)
+
+        if not self.target_path.exists():
+            raise ValueError(f"Path does not exist: {self.target_path}")
+
         self.is_project_file = self._is_project_file()
         self.project_root = self._find_project_root()
 

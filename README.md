@@ -17,19 +17,25 @@ Add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "cppcheck": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/mcp_cppcheck", "mcp_cppcheck"]
-    }
+    "type": "stdio",
+    "command": "uv",
+    "args": [
+      "--directory",
+      "/path/to/mcp_cppcheck",
+      "run",
+      "-m",
+      "mcp_cppcheck"
+    ]
   }
 }
 ```
 
 ### Tools
 
-- `check_code(target_path, mode="quick")` - Check code
-- `check_with_config(target_path, config_file)` - Check with config
+- `check_code(target_path, mode="quick")` - Check code (use absolute paths)
 - `get_project_context(target_path)` - Get project info
+
+**Important**: Always use absolute paths for `target_path`. The MCP server cannot resolve relative paths from the client's working directory.
 
 ## Requirements
 
