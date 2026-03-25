@@ -189,13 +189,7 @@ def _extract_compile_flags(compile_commands_path):
 - `{project_root}/src`
 - `{project_root}/lib`
 
-### 3. 自动应用 .cppcheck 配置文件
-当前代码检测到 `.cppcheck` 配置文件但未自动应用，需要实现：
-- 检测到 `.cppcheck` 时，根据优先级决定是否使用
-- 优先级：用户指定 config_file > compile_commands.json > .cppcheck
-- 使用 `--project=.cppcheck` 参数应用配置
-
-### 提供一些屏蔽常见误报的接口
+### 3. 提供一些屏蔽常见误报的接口
 比如关闭/去掉关于qt宏的报错
 用户指定关闭一些特定类型的报错
 

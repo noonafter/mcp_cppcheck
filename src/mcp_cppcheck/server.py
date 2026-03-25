@@ -21,19 +21,6 @@ def check_code(target_path: str, mode: str = "quick") -> str:
 
 
 @mcp.tool()
-def check_with_config(target_path: str, config_file: str) -> str:
-    """Check code with specified cppcheck config file
-
-    Args:
-        target_path: File or directory path to check
-        config_file: Cppcheck config file path
-    """
-    context = ProjectContext(target_path)
-    runner = CppcheckRunner(context)
-    return runner.run(config_file=config_file)
-
-
-@mcp.tool()
 def get_project_context(target_path: str) -> str:
     """Get project context information
 

@@ -1,7 +1,6 @@
 """Cppcheck runner and output cleaner"""
 import subprocess
 import xml.etree.ElementTree as ET
-from pathlib import Path
 from typing import Optional
 from .project_detector import ProjectContext
 
@@ -12,13 +11,13 @@ class CppcheckRunner:
     def __init__(self, context: ProjectContext):
         self.context = context
 
-    def run(self, mode: str = "quick", config_file: Optional[str] = None) -> str:
+    def run(self, mode: str = "quick") -> str:
         """Run cppcheck and return cleaned XML output"""
-        cmd = self._build_command(mode, config_file)
+        cmd = self._build_command(mode)
         result = subprocess.run(cmd, capture_output=True, text=True)
         return self._clean_xml(result.stderr)
 
-    def _build_command(self, mode: str, config_file: Optional[str]) -> list:
+    def _build_command(self, mode: str) -> list:
         """Build cppcheck command"""
         cmd = ["cppcheck", "--xml", "--xml-version=2"]
 
@@ -27,9 +26,7 @@ class CppcheckRunner:
         else:
             cmd.append("--enable=warning")
 
-        if config_file:
-            cmd.append(f"--project={config_file}")
-        elif self.context.is_project_file:
+        if self.context.is_project_file:
             cmd.append(f"--project={self.context.target_path}")
         elif self.context.compile_commands:
             cmd.append(f"--project={self.context.compile_commands}")

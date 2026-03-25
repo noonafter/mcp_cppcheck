@@ -1,5 +1,4 @@
 """Project configuration detection module"""
-import json
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +11,7 @@ class ProjectContext:
         self.project_root = self._find_project_root()
 
         # Only search for compile_commands.json if target is project file or project root
+        # 后续优化中智能提取编译参数，这里需要改动一下，在else中，也可以找compile_commands.json，只不过是用来优化-I选项，而不是设置self.compile_commands
         if self.is_project_file or (self.target_path.is_dir() and self.target_path == self.project_root):
             self.compile_commands = self._find_file("compile_commands.json")
         else:
@@ -23,7 +23,8 @@ class ProjectContext:
         """Check if target is a project file"""
         if not self.target_path.is_file():
             return False
-        return self.target_path.suffix in [".sln", ".vcxproj", ".cbp"]
+        return self.target_path.suffix in [".sln", ".vcxproj", ".cbp"] or \
+               self.target_path.name in ["compile_commands.json", ".cppcheck"]
 
     def _find_project_root(self) -> Optional[Path]:
         """Find project root directory"""
