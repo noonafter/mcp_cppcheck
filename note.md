@@ -48,15 +48,12 @@
 
   3. server.py - MCP 服务器
 
-  三个工具函数：
+  两个工具函数：
 
   1. check_code(target_path, mode="quick")
     - 检查代码文件或目录
     - 返回清洗后的 XML 结果
-  2. check_with_config(target_path, config_file)
-    - 使用指定配置文件检查
-    - 返回清洗后的 XML 结果
-  3. get_project_context(target_path)
+  2. get_project_context(target_path)
     - 获取项目环境信息
     - 返回 JSON 格式的配置信息
 

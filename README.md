@@ -4,40 +4,44 @@ MCP plugin for cppcheck static analysis tool with project awareness and output o
 
 ## Installation
 
+1. Install dependencies:
 ```bash
+cd /path/to/mcp_cppcheck
 uv pip install -e .
 ```
 
-## Usage
+2. Install cppcheck (if not already installed):
+   - Windows: `choco install cppcheck` or download from [cppcheck.net](http://cppcheck.net/)
+   - Linux: `sudo apt install cppcheck`
+   - macOS: `brew install cppcheck`
 
-### With MCP Client
+## Configuration
+
+### MCP Server
 
 Add to your MCP config:
 
 ```json
 {
   "mcpServers": {
-    "type": "stdio",
-    "command": "uv",
-    "args": [
-      "--directory",
-      "/path/to/mcp_cppcheck",
-      "run",
-      "-m",
-      "mcp_cppcheck"
-    ]
+    "cppcheck": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/mcp_server", "run", "mcp_cppcheck"]
+    }
   }
 }
 ```
 
-### Tools
 
-- `check_code(target_path, mode="quick")` - Check code (use absolute paths)
-- `get_project_context(target_path)` - Get project info
 
-**Important**: Always use absolute paths for `target_path`. The MCP server cannot resolve relative paths from the client's working directory.
+
+## Tools
+
+- `check_code(target_path, mode="quick")` - Check code files or directories
+- `get_project_context(target_path)` - Get project configuration info
 
 ## Requirements
 
 - Python >= 3.10
+- uv package manager
 - cppcheck (must be installed separately)
