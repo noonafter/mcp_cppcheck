@@ -18,17 +18,25 @@ def normalize_path(path_str: str) -> Path:
             rest = match.group(2)
             path_str = f"{drive}:/{rest}"
 
-    return Path(path_str).resolve()
+    return Path(path_str)
 
 
 class ProjectContext:
     """Project context information"""
     def __init__(self, target_path: str):
-        self.target_path = normalize_path(target_path)
+        
+        # 在windows平台下，将linux风格路径转换为windows风格
+        path = normalize_path(target_path)
 
-        if not self.target_path.exists():
-            raise ValueError(f"Path does not exist: {self.target_path}")
+        # 不接受相对路径输入
+        if not path.is_absolute():
+            raise ValueError(f"Relative path not supported: {path}. Please provide absolute path.")
 
+        # 路径不存在
+        if not path.exists():
+            raise ValueError(f"Path does not exist: {path}")
+
+        self.target_path = path.resolve()
         self.is_project_file = self._is_project_file()
         self.project_root = self._find_project_root()
 
